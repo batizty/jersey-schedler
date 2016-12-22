@@ -13,9 +13,10 @@ public class HadoopAuthTest extends JerseyTest {
         return new ResourceConfig(HadoopAuth.class);
     }
 
-    @Test
-    public void test() {
-        final String hello = target(HadoopAuth.HADOOP_POLICY_XML_TEMPLATE).request().get(String.class);
-        System.out.println("out : " + hello);
-    }
+//    @Test
+//    public void test() {
+//        final String hello = target(HadoopAuth.HADOOP_POLICY_XML_TEMPLATE).request().get(String.class);
+//        System.out.println("out : " + hello);
+//    }
+
 }

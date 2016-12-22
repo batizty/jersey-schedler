@@ -89,17 +89,17 @@ public class HadoopAuth {
                 groups);
     }
 
-    @Path(HADOOP_POLICY_XML_TEMPLATE)
-    @POST
-    @Produces(MediaType.TEXT_PLAIN)
-    public String getXML(
-            @FormParam("users") String[] users,
-            @FormParam("groups") String[] groups) {
-        return HadoopPolicySettor.getNewHadoopPolicyXML(
-                rootPath() + "/" + HADOOP_POLICY_XML_TEMPLATE,
-                users,
-                groups);
-    }
+//    @Path(HADOOP_POLICY_XML_TEMPLATE)
+//    @POST
+//    @Produces(MediaType.TEXT_PLAIN)
+//    public String getXML(
+//            @FormParam("users") String[] users,
+//            @FormParam("groups") String[] groups) {
+//        return HadoopPolicySettor.getNewHadoopPolicyXML(
+//                rootPath() + "/" + HADOOP_POLICY_XML_TEMPLATE,
+//                users,
+//                groups);
+//    }
 
     @Path(HDFS_DIR_PRIORITY_SHELL)
     @GET
