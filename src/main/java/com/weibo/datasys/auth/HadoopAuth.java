@@ -24,7 +24,7 @@ import java.util.Set;
 /**
  * Root Resource (exposed at "HadoopAuth" path)
  */
-@Path("Auth")
+@Path("/Hadoop")
 public class HadoopAuth {
 
     @Context
