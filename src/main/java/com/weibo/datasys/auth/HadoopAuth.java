@@ -3,6 +3,7 @@ package com.weibo.datasys.auth;
 import com.weibo.datasys.utils.FileUtils;
 import com.weibo.datasys.utils.HadoopPolicySettor;
 import org.apache.commons.lang.StringUtils;
+
 import javax.servlet.ServletContext;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
@@ -21,7 +22,7 @@ import java.util.*;
 /**
  * Root Resource (exposed at "HadoopAuth" path)
  */
-@Path("/Hadoop")
+@Path("/Cluster")
 public class HadoopAuth {
 
     @Context
@@ -30,6 +31,8 @@ public class HadoopAuth {
     public static final String HDFS_DIR_PRIORITY_SHELL = "add_user_to_hadoop.sh";
     public static final String HADOOP_POLICY_XML_TEMPLATE = "hadoop-policy.xml";
 
+    public static final String AUTHORIZED_CHECK = "authorized_check";
+
     private static final String user_table_name = "mm_user";
     private static final String group_table_name = "mm_group";
 
@@ -37,8 +40,28 @@ public class HadoopAuth {
         return context.getRealPath("");
     }
 
+
+    /**
+     * 下面这部分代码后续需要改到DAO层去
+     **/
+
+    private boolean checkUserAuthorization(String user) {
+        Connection connection = (Connection) context.getAttribute("connection");
+        boolean authriothed = false;
+        try {
+            Statement stat = connection.createStatement();
+            String sql = "select userName from " + user_table_name + " " +
+                    "where state = 0 and userName = \"" + user + "\"";
+            ResultSet ret = stat.executeQuery(sql);
+            authriothed = ret.next();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return authriothed;
+    }
+
     private List<String> getUsers() {
-        Connection connection = (Connection)context.getAttribute("connection");
+        Connection connection = (Connection) context.getAttribute("connection");
         Set<String> users = new HashSet<String>();
         try {
             Statement stat = connection.createStatement();
@@ -55,7 +78,7 @@ public class HadoopAuth {
     }
 
     private List<String> getGroups() {
-        Connection connection = (Connection)context.getAttribute("connection");
+        Connection connection = (Connection) context.getAttribute("connection");
         Set<String> groups = new HashSet<String>();
         try {
             Statement stat = connection.createStatement();
@@ -72,14 +95,14 @@ public class HadoopAuth {
     }
 
     private Map<String, String> getUserGroup() {
-        Connection connection = (Connection)context.getAttribute("connection");
+        Connection connection = (Connection) context.getAttribute("connection");
         Map<String, String> ugs = new HashMap<String, String>();
         try {
             Statement stat = connection.createStatement();
             String sql = "select userName, groupName from  " +
                     "(select userName, groupId from " + user_table_name + " where state = 0) a " +
                     "left join " +
-                    "(select groupName, id from  "+ group_table_name+") b " +
+                    "(select groupName, id from  " + group_table_name + ") b " +
                     "on (a.groupId = b.id)";
             ResultSet ret = stat.executeQuery(sql);
             while (ret.next()) {
@@ -117,7 +140,7 @@ public class HadoopAuth {
             content = FileUtils.readFile(rootPath() + HDFS_DIR_PRIORITY_SHELL);
             List<String> users = new ArrayList<String>();
             List<String> groups = new ArrayList<String>();
-            for (Map.Entry<String, String> entry: getUserGroup().entrySet() ) {
+            for (Map.Entry<String, String> entry : getUserGroup().entrySet()) {
                 users.add(entry.getKey());
                 groups.add(entry.getValue());
             }
@@ -130,5 +153,17 @@ public class HadoopAuth {
             e.printStackTrace();
         }
         return content;
+    }
+
+    @Path(AUTHORIZED_CHECK + "/{user_name}")
+    @GET
+    @Produces(MediaType.TEXT_PLAIN)
+    public String checkAuth(
+            @PathParam("user_name") String user) {
+        if (checkUserAuthorization(user)) {
+            return "{ \"result\" : \"true\" }";
+        } else {
+            return "{ \"result\" : \"false\", \"message\" : \"Not Authorized User\" }";
+        }
     }
 }
