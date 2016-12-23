@@ -2,7 +2,7 @@ package com.weibo.datasys.auth;
 
 import com.weibo.datasys.utils.FileUtils;
 import com.weibo.datasys.utils.HadoopPolicySettor;
-
+import org.apache.commons.lang.StringUtils;
 import javax.servlet.ServletContext;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
@@ -11,10 +11,7 @@ import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Created by tuoyu on 22/12/2016.
@@ -74,6 +71,28 @@ public class HadoopAuth {
         return new ArrayList<String>(groups);
     }
 
+    private Map<String, String> getUserGroup() {
+        Connection connection = (Connection)context.getAttribute("connection");
+        Map<String, String> ugs = new HashMap<String, String>();
+        try {
+            Statement stat = connection.createStatement();
+            String sql = "select userName, groupName from  " +
+                    "(select userName, groupId from " + user_table_name + " where state = 0) a " +
+                    "left join " +
+                    "(select groupName, id from  "+ group_table_name+") b " +
+                    "on (a.groupId = b.id)";
+            ResultSet ret = stat.executeQuery(sql);
+            while (ret.next()) {
+                String u = ret.getString("userName");
+                String g = ret.getString("groupName");
+                ugs.put(u, g);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return ugs;
+    }
+
     /**
      *
      */
@@ -89,18 +108,6 @@ public class HadoopAuth {
                 groups);
     }
 
-//    @Path(HADOOP_POLICY_XML_TEMPLATE)
-//    @POST
-//    @Produces(MediaType.TEXT_PLAIN)
-//    public String getXML(
-//            @FormParam("users") String[] users,
-//            @FormParam("groups") String[] groups) {
-//        return HadoopPolicySettor.getNewHadoopPolicyXML(
-//                rootPath() + "/" + HADOOP_POLICY_XML_TEMPLATE,
-//                users,
-//                groups);
-//    }
-
     @Path(HDFS_DIR_PRIORITY_SHELL)
     @GET
     @Produces(MediaType.TEXT_PLAIN)
@@ -108,16 +115,22 @@ public class HadoopAuth {
         String content = "";
         try {
             content = FileUtils.readFile(rootPath() + HDFS_DIR_PRIORITY_SHELL);
+            List<String> users = new ArrayList<String>();
+            List<String> groups = new ArrayList<String>();
+            for (Map.Entry<String, String> entry: getUserGroup().entrySet() ) {
+                users.add(entry.getKey());
+                groups.add(entry.getValue());
+            }
+            String uarray = "user_array=(" + StringUtils.join(users, " ") + ")";
+            String garray = "group_array=(" + StringUtils.join(groups, " ") + ")";
+            System.out.println("uarray = " + uarray);
+            System.out.println("garray = " + garray);
+            content = content.replace("user_array=()", uarray);
+            content = content.replace("group_array=()", garray);
         } catch (IOException e) {
             System.out.println("error : " + e.getMessage());
             e.printStackTrace();
         }
         return content;
     }
-
-//    public static void main() {
-//        HadoopAuth hda = new HadoopAuth();
-//        hda.getUsers();
-//        return;
-//    }
 }

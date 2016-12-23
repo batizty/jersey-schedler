@@ -1,24 +1,9 @@
 #!/bin/sh
 
-if [ $# -lt 1 ]; then
-    echo "Not Enough Arguments"
-    echo "Usage : ./add_user_to_hadoop.sh use_name [group_name]"
-    exit -1
-fi
-
-user_name=$1
-
-if [ $# -eq 2 ]; then
-    group_name=$2
-else
-    group_name=$user_name
-fi
-
 #### Common Functions ####
 function checkHDFS() {
     target_file="/user/$user_name"
-    cmd="hadoop fs -test -e ${target_file}"
-    `$cmd`
+    runCommands "hadoop fs -test -e ${target_file}"
     result=$?
     if [ $result -eq 0 ]; then
         return 1
@@ -83,15 +68,26 @@ export HADOOP_HOME="/usr/local/hadoop"
 export HADOOP_CONF_DIR="$HADOOP_HOME/etc/hadoop"
 source "${HADOOP_CONF_DIR}/hadoop-env.sh"
 
-#### check hadoop HDFS have this user and group ####
-printInfo "check user $user_name exists or not"
-checkHDFS
-RET=$?
-#### if not exists, init files for this user and group ####
-if [ $RET -eq 0 ]; then
-    printInfo "user $user_name is not in HDFS and init for $user_name"
-    init
+#### Generate by Program ####
+user_array=()
+group_array=()
+
+for ((i = 0; i < ${#user_array[@]}; i++)); do
+    user_name=${user_array[$i]}
+    group_name=${group_array[$i]}
+    echo "User $user_name:$group_name"
+
+
+    #### check hadoop HDFS have this user and group ####
+    printInfo "check user $user_name exists or not"
+    checkHDFS
     RET=$?
-else
-    printError "user $user_name is already in system"
-fi
+    #### if not exists, init files for this user and group ####
+    if [ $RET -eq 0 ]; then
+        printInfo "user $user_name is not in HDFS and init for $user_name"
+        init
+        RET=$?
+    else
+        printError "user $user_name is already in system"
+    fi
+done
