@@ -123,8 +123,6 @@ public class HadoopAuth {
             }
             String uarray = "user_array=(" + StringUtils.join(users, " ") + ")";
             String garray = "group_array=(" + StringUtils.join(groups, " ") + ")";
-            System.out.println("uarray = " + uarray);
-            System.out.println("garray = " + garray);
             content = content.replace("user_array=()", uarray);
             content = content.replace("group_array=()", garray);
         } catch (IOException e) {
